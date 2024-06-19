@@ -1,0 +1,183 @@
+---
+title: "BRICS' New Development Bank Funding Strategy"
+author: "SID: 500687002"
+output: 
+   html_document:
+     toc: yes
+     toc_float: true
+     code_folding: hide
+     theme: cosmo
+     
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+library(tidyverse)
+```
+
+# 1. Introduction
+
+## a) Client
+
+Client: Anil Kishora, Vice-President and Chief Risk Officer of the New Development Bank (established by BRICS), specialising in strategy.\
+
+https://www.linkedin.com/in/anilkishora/
+
+BRICS is an international organisation dedicated to increasing economic prosperity and growth within its partner nations.
+
+## b) Recommendation
+
+This report recommends that the National Development Bank allocate resources to support education initiatives in member states Brazil, China, Ethiopia and India to support the economic growth of the group.\
+As there is a significant correlation between years of schooling and Gross Domestic Product, it would assist the BRICS group's growth to prioritise education for their members below the global average.
+
+# 2. Evidence
+
+## a) Years of Education & Gross Domestic Product
+
+This report seeks to prove that there is a strong correlation between Years of Education and Gross Domestic Product per Capita. Hence, investing in education may assist in developing the BRICS group economically.
+
+```{r, include=FALSE}
+#read in main file and clean
+iq = read.csv("avgIQpercountry.csv")
+iq$Country = gsub("T√ºrkiye", "Turkiye", iq$Country)
+
+#read in gdp file and clean
+gdp = read.csv("gdp-pc.csv")
+gdp <- select(gdp, c('Country', 'X2021'))
+colnames(gdp) = c('Country', 'GDP.2021')
+gdp$gdp.log = log(gdp$GDP.2021)
+gdp$Country = gsub("Egypt, Arab Rep.", "Egypt", gdp$Country)
+gdp$Country = gsub("Russian Federation", "Russia", gdp$Country)
+
+#combine both dataframes
+iq <- left_join(iq, gdp, by = join_by('Country'))
+
+iq <- drop_na(iq)
+
+#create a dataset for only brics members
+brics = filter(iq, iq$Country == "Brazil" | iq$Country == "Russia" | iq$Country == "India" | iq$Country == "China" | iq$Country == "South Africa" | iq$Country == "Egypt" | iq$Country == "Ethiopia" | iq$Country == "Iran" | iq$Country == "United Arab Emirates")
+```
+
+In the below graph, please see the relationship between GDP Per Capita and Mean Years of Schooling.
+
+```{r}
+ggplot(iq, aes(x=Mean.years.of.schooling...2021, y=GDP.2021)) + geom_point() + geom_jitter() + ggtitle("Mean Years of Schooling vs GDP") + ylab("GDP per Capita") + xlab("Mean Years of Schooling") + theme(plot.title = element_text(hjust = 0.5)) + theme_classic()
+```
+
+After adjusting the Y-axis to a logarithmic scale, we can see a very clear linear relationship, with a very strong positive correlation of 0.9504735.
+
+```{r}
+ggplot(iq, aes(x=Mean.years.of.schooling...2021, y=gdp.log)) + geom_point() + geom_jitter() + geom_smooth(method = "lm") + ggtitle("Mean Years of Schooling vs GDP (Scaled Logarithmically)") + ylab("GDP per Capita (Log)") + xlab("Mean Years of Schooling") + theme(plot.title = element_text(hjust = 0.5)) + theme_classic()
+```
+
+```{r, include=FALSE}
+cor(iq$HDI..2021., iq$gdp.log)
+```
+
+As a residual plot was produced with no pattern, a linear model seems appropriate. However, this can be examined with a 1 sample T-Test for regression. 
+
+Our hypotheses are as follows, we will test to see if the linear relationship between variables has a slope significantly different to 0. 
+
+$H_0: β_1 = 0$ (There is no linear relationship)\
+$H_0: β_1 ≠ 0$ (There is a linear relationship)
+
+$\alpha$ (Significance Threshold): P-Value < 0.05
+
+Assumptions of independence, normality of residuals and homoscedasticity have been met. Please see below summary of the test:
+
+```{r}
+school.lm = lm(gdp.log ~ Mean.years.of.schooling...2021, data = iq)
+summary(school.lm)
+```
+
+The P-Value is below our significance threshold (0.05), so there is significant evidence that there is a linear relationship between Mean Schooling Years and GDP Per Capita when scaled logarithmically.
+
+Looking back to the original relationship, we can see there is significant evidence to suggest that there is a relationship, albeit not linear, between the two variables. **Thus, investing in education may assist in growing GDP Per Capita of BRICS countries.**
+
+## b) Allocation of Funding
+
+From our recommendation of allocating funding to education initiatives for BRICS members, we must see which member states need the most funding. Please see below figure of Mean Years of Education by Country, with a horizontal line representing global average.
+
+```{r}
+ggplot(brics, aes(x=Country, y=Mean.years.of.schooling...2021)) + geom_bar(stat = "identity") + geom_hline(yintercept = 8.8) + ggtitle("Mean Years of Schooling by BRICS Member State") + xlab("BRICS Member State") + ylab("Mean Years of Schooling") + theme(plot.title = element_text(hjust = 0.5), axis.text.x = element_text(angle=75,vjust=0.55)) + theme_classic() 
+```
+
+Member states **Brazil**, **China**, **Ethiopia** and **India** are below the global average, with **Ethiopia having the lowest mean**. Investing specifically in these member states' education will allow the most growth, both in the education of their citizens, and in the economic growth of their State. 
+
+# 3. Acknowledgements
+
+* Mathematical Notation in R: https://rpruim.github.io/s341/S19/from-class/MathinRmd.html
+* Tabsetting: https://bookdown.org/yihui/rmarkdown-cookbook/html-tabs.html#fig:html-tabs
+* Mean Years of Schooling: https://ourworldindata.org/grapher/mean-years-of-schooling-long-run?tab=table
+* Background on HDI: https://hdr.undp.org/data-center/human-development-index#/indicies/HDI
+* Ed discussion on logarithmic scaling: #1485
+* Ed discussion on topic choice: #1444
+* GDP per Capita Dataset: https://data.worldbank.org/indicator/NY.GDP.PCAP.CD
+
+# 4. Appendix
+## 4.1 Client Choice
+
+I chose my client to be the New Development Bank established by BRICS as the bank is set up to promote prosperity in member nations. I felt that the most important thing for the client was increasing GDP, so I focused my analysis around this area to achieve the most growth without wasting resources.
+
+## 4.2 Statistical Analysis
+### a) Regression - GDP vs Years of Schooling
+
+When hypothesis testing for regression, the below assumptions were met:
+
+* Normal distribution of residuals - Histogram seems symmetrical (Figure 1.1) and QQPlot stays mostly on the line (Figure 1.2)
+* Homoscedasticity - No pattern in Residuals vs Fitted Plot, seemingly homoscedastic (Figure 1.3).
+* Independence of residuals - Residual Plot seems random. (Figure 1.4)
+* Linearity - Eye test on scatterplot, seemingly linear.
+
+#### Figures {.tabset}
+
+##### Figure 1.1
+
+```{r}
+school.res = resid(school.lm)
+hist(school.res, main="Histogram of Residuals", xlab="Residuals")
+#title(main="Histogram of Residuals",
+      #xlab="Residuals",
+      #ylab="Frequency")
+```
+
+##### Figure 1.2
+
+```{r}
+qqnorm(school.res)
+qqline(school.res, col = "steelblue", lwd = 2) 
+```
+
+##### Figure 1.3
+
+```{r}
+plot(lm(iq$gdp.log~iq$Mean.years.of.schooling...2021),which = 1)
+
+#ggplot(lm(iq$gdp.log~iq$Mean.years.of.schooling...2021), aes(x= .fitted, y= .resid)) + geom_point()
+#title(main="sdfsdf")
+```
+
+##### Figure 1.4
+
+```{r}
+plot(iq$Mean.years.of.schooling...2021, school.res, main="Residual Plot", ylab="Residuals", xlab="Mean Years of Schooling") 
+```
+
+## {-}
+
+### b) Mean Years of Schooling
+
+There was a discrepancy between the global mean years of schooling from this dataset (9.0) and the global mean reported by Our World in Data (original data source) - 8.8. As the data was a) not normally distributed (left skewed), b) the sample size was very close to population (only a few countries excluded), a T-Test for mean was not appropriate for this dataset. Given that the difference between the two means would not meaningfully affect my analysis, I assumed the mean given by the World in Data was suitable.
+
+```{r, figures-side, fig.show="hold", out.width="50%"}
+ggplot(iq, aes(x=Mean.years.of.schooling...2021)) + geom_histogram(bins = 8) + stat_function(fun=dnorm, arg=c(mean(iq$Mean.years.of.schooling...2021), sd(iq$Mean.years.of.schooling...2021))) + ggtitle("Distribution of Mean Years of Schooling") + xlab("Mean Years of Schooling") + ylab("Frequency")
+
+qqnorm(iq$Mean.years.of.schooling...2021) 
+qqline(iq$Mean.years.of.schooling...2021, lwd = 2) 
+```
+
+## 4.3 Limitations
+
+* Rates of averages tend to inflate the correlation coefficient.
+* No statistical test for average years of schooling.
+* Data was taken in 2021, the data may look different now.
